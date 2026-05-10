@@ -1,4 +1,6 @@
-# Traveloop Backend
+# Vactrip (Traveloop)
+
+Full-stack personalized travel planning: **React + Vite** client and a **Node.js + Express + MySQL** API. This README focuses on the backend; the `client/` folder is the production UI.
 
 A travel planning **REST API** built for a hackathon. It powers personalized trips with **Node.js**, **Express**, **MySQL**, **Sequelize ORM**, and **JWT**-based authentication.
 
