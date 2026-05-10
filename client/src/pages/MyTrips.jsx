@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import TravelShell from '../components/TravelShell.jsx';
+import AppNavbar from '../components/AppNavbar.jsx';
 
 const STATUS_GROUPS = [
   { key: 'upcoming', title: 'Upcoming', accent: 'from-cyan-400 to-blue-500' },
@@ -88,7 +92,14 @@ function TripCard({ trip, onDeleteClick }) {
   const coverSrc = trip.cover_photo || '/uploads/default-trip-cover.jpg';
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:shadow-cyan-500/10">
+    <motion.article 
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      whileHover={{ y: -5 }}
+      className="group overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-2xl backdrop-blur-xl transition duration-300 hover:shadow-cyan-500/10"
+    >
       <div className="relative h-44 overflow-hidden">
         <img
           src={coverSrc}
@@ -165,7 +176,7 @@ function TripCard({ trip, onDeleteClick }) {
           </button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -249,6 +260,7 @@ export default function MyTrips() {
     try {
       await api.delete(`/trips/${removedTrip.id}`);
       setDeleteTarget(null);
+      toast.success('Trip deleted successfully');
     } catch (err) {
       // Roll back UI if delete fails.
       setTrips(previousTrips);
@@ -256,7 +268,7 @@ export default function MyTrips() {
         setError('Your session expired. Please login again.');
         navigate('/login', { replace: true });
       } else {
-        setError(err.response?.data?.message || 'Failed to delete trip. Please try again.');
+        toast.error(err.response?.data?.message || 'Failed to delete trip. Please try again.');
       }
     } finally {
       setDeletePending(false);
@@ -264,21 +276,32 @@ export default function MyTrips() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-950 via-indigo-950 to-stone-950 text-stone-100">
-      <section className="relative overflow-hidden px-4 pb-14 pt-14 sm:px-6 lg:px-8">
-        <div className="pointer-events-none absolute -left-16 top-10 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -right-12 top-24 h-56 w-56 rounded-full bg-violet-400/20 blur-3xl" />
-
+    <TravelShell>
+      <AppNavbar />
+      <section className="relative flex-1 overflow-hidden px-4 pb-14 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative mb-10 overflow-hidden rounded-3xl border border-white/12 shadow-2xl"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1600&q=75"
+              alt=""
+              className="h-48 w-full object-cover sm:h-56"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-night-950/95 via-indigo-950/65 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-6 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/90">
                 Your travel dashboard
               </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                My Trips
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm text-stone-300 sm:text-base">
+              <h1 className="mt-2 font-display text-3xl font-medium text-white sm:text-4xl">My Trips</h1>
+            </div>
+          </motion.div>
+
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm text-stone-300 sm:text-base">
                 Track every adventure phase, open the builder, and keep your itinerary polished.
               </p>
             </div>
@@ -346,11 +369,13 @@ export default function MyTrips() {
                         No {group.title.toLowerCase()} trips yet.
                       </div>
                     ) : (
-                      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                        {sectionTrips.map((trip) => (
-                          <TripCard key={trip.id} trip={trip} onDeleteClick={openDeleteModal} />
-                        ))}
-                      </div>
+                      <motion.div layout className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                        <AnimatePresence>
+                          {sectionTrips.map((trip) => (
+                            <TripCard key={trip.id} trip={trip} onDeleteClick={openDeleteModal} />
+                          ))}
+                        </AnimatePresence>
+                      </motion.div>
                     )}
                   </section>
                 );
@@ -366,6 +391,6 @@ export default function MyTrips() {
         onCancel={closeDeleteModal}
         onConfirm={confirmDelete}
       />
-    </div>
+    </TravelShell>
   );
 }

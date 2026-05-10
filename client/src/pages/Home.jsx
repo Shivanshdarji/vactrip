@@ -2,14 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
 import { useAuth } from '../hooks/useAuth.js';
-import AdminTravelerSwitch from '../components/AdminTravelerSwitch.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
+import { motion } from 'framer-motion';
+import TravelShell from '../components/TravelShell.jsx';
+import AppNavbar from '../components/AppNavbar.jsx';
+import { getLastTripId, subscribeLastTrip } from '../lib/lastTrip.js';
+import { activityImageUrl } from '../config/activityImages.js';
 
 const QUICK_ACTIONS = [
   { title: 'My Trips', subtitle: 'Manage all itineraries', to: '/trips', emoji: '🧭' },
   { title: 'Create Trip', subtitle: 'Start a fresh journey', to: '/trips/create', emoji: '➕' },
-  { title: 'Explore Cities', subtitle: 'Find your next stop', to: '/cities', emoji: '🏙️' },
-  { title: 'Activities', subtitle: 'Discover what to do', to: '/activities', emoji: '🎒' },
+  { title: 'Explore Cities', subtitle: 'Atlas & photo guides', to: '/cities', emoji: '🏙️' },
+  { title: 'Activities', subtitle: 'Full experience library', to: '/activities', emoji: '🎒' },
+  { title: 'Community', subtitle: 'Clone public journeys', to: '/community', emoji: '🌐' },
+  { title: 'Saved', subtitle: 'Bucket list hearts', to: '/saved-destinations', emoji: '❤️' },
 ];
 
 function getGreetingByTime() {
@@ -70,7 +75,7 @@ function CitySkeleton() {
 }
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
@@ -79,6 +84,11 @@ export default function Home() {
   const [citiesLoading, setCitiesLoading] = useState(true);
   const [tripsError, setTripsError] = useState('');
   const [citiesError, setCitiesError] = useState('');
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [lastTripId, setLastTripId] = useState(getLastTripId);
+
+  useEffect(() => subscribeLastTrip(() => setLastTripId(getLastTripId())), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,13 +96,15 @@ export default function Home() {
     async function fetchDashboardData() {
       setTripsLoading(true);
       setCitiesLoading(true);
+      setActivitiesLoading(true);
       setTripsError('');
       setCitiesError('');
 
       // Run both requests together to make dashboard load faster.
-      const [tripsResult, citiesResult] = await Promise.allSettled([
+      const [tripsResult, citiesResult, activitiesResult] = await Promise.allSettled([
         api.get('/trips'),
         api.get('/cities'),
+        api.get('/activities'),
       ]);
 
       if (cancelled) return;
@@ -124,8 +136,16 @@ export default function Home() {
         );
       }
 
+      if (activitiesResult.status === 'fulfilled') {
+        const rows = Array.isArray(activitiesResult.value.data?.data)
+          ? activitiesResult.value.data.data
+          : [];
+        setActivities(rows.slice(0, 8));
+      }
+
       setTripsLoading(false);
       setCitiesLoading(false);
+      setActivitiesLoading(false);
     }
 
     fetchDashboardData();
@@ -146,31 +166,20 @@ export default function Home() {
   const recentTrips = useMemo(() => trips.slice(0, 3), [trips]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-950 via-indigo-950 to-stone-950 text-stone-100">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-stone-950/35 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <span className="text-xl font-semibold tracking-tight text-white">Traveloop</span>
-          <div className="flex items-center gap-2">
-            <AdminTravelerSwitch variant="onDark" />
-            <ThemeToggle variant="onDark" />
-            <span className="hidden text-sm text-stone-200 sm:inline">{user?.name}</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-full border border-white/25 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white/10"
-            >
-              Log out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl space-y-10">
-          <section className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-r from-cyan-500/20 via-blue-500/15 to-violet-500/20 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
-            <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-cyan-300/20 blur-3xl" />
-            <div className="pointer-events-none absolute -right-20 -bottom-16 h-52 w-52 rounded-full bg-violet-300/20 blur-3xl" />
-            <div className="relative z-10">
+    <TravelShell>
+      <AppNavbar />
+      <main className="flex-1 px-4 pb-20 pt-8 sm:px-6 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ staggerChildren: 0.1 }} className="mx-auto max-w-7xl space-y-10">
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative overflow-hidden rounded-3xl border border-white/15 shadow-2xl sm:p-10">
+            <img
+              src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2000&q=75"
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-night-950/95 via-indigo-950/80 to-cyan-900/55" />
+            <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-cyan-300/25 blur-3xl" />
+            <div className="pointer-events-none absolute -right-20 -bottom-16 h-52 w-52 rounded-full bg-violet-300/25 blur-3xl" />
+            <div className="relative z-10 p-8 sm:p-10">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/90">
                 Personalized travel planning
               </p>
@@ -184,21 +193,34 @@ export default function Home() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to="/trips/create"
-                  className="rounded-xl bg-gradient-to-r from-cyan-300 to-blue-400 px-5 py-3 text-sm font-semibold text-stone-900 transition hover:from-cyan-200 hover:to-blue-300"
+                  className="rounded-xl bg-gradient-to-r from-cyan-300 to-blue-400 px-5 py-3 text-sm font-semibold text-stone-900 shadow-lg transition hover:from-cyan-200 hover:to-blue-300"
                 >
                   Create Trip
                 </Link>
                 <Link
                   to="/cities"
-                  className="rounded-xl border border-white/25 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
                 >
                   Explore Cities
                 </Link>
+                <Link
+                  to="/activities"
+                  className="rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                >
+                  Browse Activities
+                </Link>
+                {lastTripId ? (
+                  <Link
+                    to={`/trips/${lastTripId}/finance`}
+                    className="rounded-xl border border-emerald-300/40 bg-emerald-500/20 px-5 py-3 text-sm font-semibold text-emerald-50 backdrop-blur-md transition hover:bg-emerald-500/30"
+                  >
+                    Trip finance
+                  </Link>
+                ) : null}
               </div>
             </div>
-          </section>
-
-          <section className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
+          </motion.section>
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
             <article className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
               <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/85">Welcome back</p>
               <h2 className="mt-3 text-2xl font-semibold text-white">
@@ -225,23 +247,98 @@ export default function Home() {
 
             <article className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
               <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
-              <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {QUICK_ACTIONS.map((item) => (
                   <Link
                     key={item.title}
                     to={item.to}
-                    className="group rounded-xl border border-white/10 bg-black/20 p-3 transition hover:-translate-y-0.5 hover:border-cyan-200/40 hover:bg-black/30"
+                    className="group rounded-xl border border-white/10 bg-black/25 p-3 transition hover:-translate-y-1 hover:border-cyan-200/45 hover:bg-black/35 hover:shadow-lg"
                   >
-                    <p className="text-lg">{item.emoji}</p>
+                    <p className="text-lg transition group-hover:scale-110">{item.emoji}</p>
                     <p className="mt-1 text-sm font-semibold text-white">{item.title}</p>
                     <p className="mt-1 text-[11px] text-stone-400">{item.subtitle}</p>
                   </Link>
                 ))}
+                {lastTripId ? (
+                  <>
+                    <Link
+                      to={`/trips/${lastTripId}/finance`}
+                      className="group rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3 transition hover:-translate-y-1 hover:border-emerald-300/50"
+                    >
+                      <p className="text-lg">💳</p>
+                      <p className="mt-1 text-sm font-semibold text-white">Finance</p>
+                      <p className="mt-1 text-[11px] text-emerald-200/80">Last trip ledger</p>
+                    </Link>
+                    <Link
+                      to={`/trips/${lastTripId}/utilities`}
+                      className="group rounded-xl border border-amber-400/25 bg-amber-500/10 p-3 transition hover:-translate-y-1 hover:border-amber-300/50"
+                    >
+                      <p className="text-lg">✅</p>
+                      <p className="mt-1 text-sm font-semibold text-white">Trip kit</p>
+                      <p className="mt-1 text-[11px] text-amber-100/80">Lists &amp; notes</p>
+                    </Link>
+                  </>
+                ) : null}
               </div>
             </article>
-          </section>
+          </motion.section>
 
-          <section className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl"
+          >
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-2xl font-semibold text-white">Trending experiences</h3>
+              <Link
+                to="/activities"
+                className="rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-white/10"
+              >
+                See all activities
+              </Link>
+            </div>
+            {activitiesLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-48 animate-pulse rounded-xl bg-white/10" />
+                ))}
+              </div>
+            ) : activities.length === 0 ? (
+              <p className="text-sm text-stone-400">Activities will appear here once the catalog loads.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {activities.map((a) => (
+                  <article
+                    key={a.id}
+                    className="group overflow-hidden rounded-xl border border-white/10 bg-black/25 transition hover:-translate-y-1 hover:border-cyan-300/40"
+                  >
+                    <div className="relative h-32 overflow-hidden">
+                      <img
+                        src={activityImageUrl(a)}
+                        alt={a.name}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-night-950/90 to-transparent" />
+                      {a.type ? (
+                        <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+                          {a.type}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-1 text-sm font-semibold text-white">{a.name}</p>
+                      {a.city_name ? (
+                        <p className="mt-1 text-[11px] text-cyan-200/90">{a.city_name}</p>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </motion.section>
+
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-2xl font-semibold text-white">Recent Trips</h3>
               <Link
@@ -309,9 +406,9 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </section>
+          </motion.section>
 
-          <section className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="rounded-2xl border border-white/15 bg-white/10 p-6 shadow-xl backdrop-blur-xl">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-2xl font-semibold text-white">Curated Destinations</h3>
               <Link
@@ -378,9 +475,9 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </section>
+          </motion.section>
 
-          <section className="rounded-2xl border border-white/15 bg-gradient-to-r from-emerald-500/20 via-cyan-500/15 to-blue-500/20 p-7 shadow-xl backdrop-blur-xl">
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="rounded-2xl border border-white/15 bg-gradient-to-r from-emerald-500/20 via-cyan-500/15 to-blue-500/20 p-7 shadow-xl backdrop-blur-xl">
             <h3 className="text-2xl font-semibold text-white">Explore more destinations</h3>
             <p className="mt-2 max-w-2xl text-sm text-stone-200">
               Discover mountain escapes, beach towns, and cultural gems curated for your next
@@ -392,9 +489,9 @@ export default function Home() {
             >
               Explore Cities
             </Link>
-          </section>
+          </motion.section>
 
-          <section className="rounded-2xl border border-white/15 bg-gradient-to-r from-fuchsia-500/20 via-violet-500/15 to-indigo-500/20 p-7 shadow-xl backdrop-blur-xl">
+          <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="rounded-2xl border border-white/15 bg-gradient-to-r from-fuchsia-500/20 via-violet-500/15 to-indigo-500/20 p-7 shadow-xl backdrop-blur-xl">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-violet-100/90">
               Travel inspiration
             </p>
@@ -404,9 +501,9 @@ export default function Home() {
             <p className="mt-2 max-w-2xl text-sm text-stone-200">
               Save destinations, craft stops, and shape a journey that feels truly yours.
             </p>
-          </section>
-        </div>
+          </motion.section>
+        </motion.div>
       </main>
-    </div>
+    </TravelShell>
   );
 }

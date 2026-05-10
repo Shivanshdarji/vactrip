@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios.js';
+import TravelShell from '../components/TravelShell.jsx';
+import AppNavbar from '../components/AppNavbar.jsx';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
@@ -131,32 +133,29 @@ export default function CreateTrip() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-950 via-indigo-950 to-stone-950 text-stone-100">
-      <section className="relative overflow-hidden px-4 pb-12 pt-14 sm:px-6 lg:px-8">
-        <div className="pointer-events-none absolute -left-20 top-8 h-56 w-56 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div className="pointer-events-none absolute -right-10 top-24 h-56 w-56 rounded-full bg-fuchsia-400/20 blur-3xl" />
-
+    <TravelShell>
+      <AppNavbar />
+      <section className="relative flex-1 overflow-hidden px-4 pb-12 pt-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex items-center justify-between gap-3">
-            <Link
-              to="/home"
-              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/90 transition hover:bg-white/10"
-            >
-              Back
-            </Link>
-          </div>
-
-          <div className="mb-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/90">
-              Plan your next escape
-            </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              Create a trip that feels like a premium journey.
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-stone-300 sm:text-base">
-              Set your timeline, budget, and vibe in one place. You can always refine stops and
-              activities inside the itinerary builder after this step.
-            </p>
+          <div className="relative mb-10 overflow-hidden rounded-3xl border border-white/12 shadow-2xl">
+            <img
+              src="https://images.unsplash.com/photo-1503220317375-16bb608e8d84?auto=format&fit=crop&w=1800&q=75"
+              alt=""
+              className="h-44 w-full object-cover sm:h-52"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-night-950 via-night-950/55 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200/90">
+                Plan your next escape
+              </p>
+              <h1 className="mt-3 max-w-3xl font-display text-3xl font-medium tracking-tight text-white sm:text-4xl md:text-5xl">
+                Create a trip that feels like a premium journey.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-200 sm:text-base">
+                Set your timeline, budget, and vibe in one place. Refine stops and activities inside
+                the itinerary builder after this step.
+              </p>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -312,6 +311,6 @@ export default function CreateTrip() {
           </form>
         </div>
       </section>
-    </div>
+    </TravelShell>
   );
 }
